@@ -1,193 +1,174 @@
-# ⚡ TaskFlow API — FastAPI Backend
+# ⚙️ TaskFlow API — Serverless Task Manager (AWS + S3 Deployment)
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge\&logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge\&logo=python\&logoColor=white)](https://www.python.org/)
-[![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=for-the-badge\&logo=render\&logoColor=white)](https://render.com/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)]()
+<p align="center">
 
-A **high-performance REST API** built with **FastAPI** that powers the **TaskFlow productivity application**.
+[![Live API](https://img.shields.io/badge/API-Live-success?style=for-the-badge)](https://89djj7pnai.execute-api.ap-south-1.amazonaws.com/default/)
+![AWS](https://img.shields.io/badge/AWS-Serverless-orange?style=for-the-badge\&logo=amazonaws)
+![Lambda](https://img.shields.io/badge/AWS-Lambda-yellow?style=for-the-badge\&logo=awslambda)
+![DynamoDB](https://img.shields.io/badge/Database-DynamoDB-blue?style=for-the-badge\&logo=amazondynamodb)
+![API Gateway](https://img.shields.io/badge/API-Gateway-green?style=for-the-badge)
+![S3](https://img.shields.io/badge/Deployment-S3-blue?style=for-the-badge\&logo=amazons3)
 
-The API manages tasks, priorities, and completion states while providing a **clean, scalable backend architecture**.
-
----
-
-# 🌐 Live API
-
-**Base URL**
-
-https://fastapi-project-2-task-manager-backend.onrender.com
-
-**Interactive API Documentation**
-
-Swagger UI
-https://fastapi-project-2-task-manager-backend.onrender.com/docs
-
-ReDoc
-https://fastapi-project-2-task-manager-backend.onrender.com/redoc
+</p>
 
 ---
 
-# 🚀 Features
+## 🚀 Overview
 
-* ⚡ **FastAPI Performance** — built on Starlette and Pydantic
-* 📚 **Auto-Generated Documentation** — Swagger & ReDoc
-* 🔄 **Full CRUD Operations**
-* 🌐 **CORS Enabled** for frontend communication
-* 🧠 **Priority Management** (Low / Medium / High)
-* 🟢 **Task Status Tracking**
-* 🧩 **Lightweight In-Memory Storage**
+**TaskFlow API** is a fully **serverless backend** built using **FastAPI deployed on AWS Lambda**, integrated with **API Gateway and DynamoDB**.
 
-> Note: Data resets on server restart in the current version.
+The application is packaged and deployed via **Amazon S3**, enabling scalable and production-ready deployment.
 
 ---
 
-# 🏗 Architecture
+## 🌐 Live API
 
-```
-Client (Streamlit Frontend)
-        │
-        ▼
-   FastAPI Backend
-        │
-        ▼
-   In-Memory Task Store
-```
-
-The API is designed to be easily extendable with:
-
-* PostgreSQL
-* MongoDB
-* Redis caching
-* Authentication systems
+👉 https://89djj7pnai.execute-api.ap-south-1.amazonaws.com/default/
 
 ---
 
-# 📡 API Endpoints
+## ✨ Features
 
-| Method   | Endpoint                  | Description            |
-| -------- | ------------------------- | ---------------------- |
-| `GET`    | `/tasks`                  | Retrieve all tasks     |
-| `GET`    | `/tasks/{id}`             | Retrieve a single task |
-| `POST`   | `/tasks/create_task`      | Create a new task      |
-| `PUT`    | `/tasks/update_task/{id}` | Update task details    |
-| `DELETE` | `/tasks/delete_task/{id}` | Delete a task          |
-
----
-
-# 📥 Example Request
-
-### Create Task
-
-```
-POST /tasks/create_task
-```
-
-Request Body
-
-```json
-{
-  "id": 1,
-  "title": "Finish FastAPI project",
-  "description": "Build task manager API",
-  "completed": false,
-  "priority": "high"
-}
-```
-
-Response
-
-```json
-"Task Created Successfully"
-```
+* 📋 Get all tasks
+* 🔎 Get task by ID
+* ➕ Create tasks
+* ✏️ Update tasks
+* ❌ Delete tasks
+* ⚡ Fast execution using AWS Lambda
+* ☁️ Fully scalable serverless architecture
+* 📦 Deployment via Amazon S3
 
 ---
 
-# 📂 Project Structure
+## 🛠 Tech Stack
 
-```
+### Backend
+
+* FastAPI
+* Mangum (ASGI → Lambda adapter)
+* Boto3
+
+### Cloud Infrastructure
+
+* AWS Lambda
+* API Gateway
+* DynamoDB
+* Amazon S3 (deployment package storage)
+
+---
+
+## 📂 Project Structure
+
+```bash id="tfaws1"
 taskflow-api
 │
-├── task_api.py
+├── main.py
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-# ⚙️ Local Development
+## ⚙️ Deployment Architecture
 
-Clone the repository
-
-```
-git clone https://github.com/iqroguerex-cpu/fastapi-project-2-task-manager-backend
-```
-
-Navigate into the project
-
-```
-cd fastapi-project-2-task-manager-backend
-```
-
-Install dependencies
-
-```
-pip install -r requirements.txt
-```
-
-Run the API server
-
-```
-uvicorn task_api:app --reload --port 8002
-```
-
-Access documentation
-
-```
-http://127.0.0.1:8002/docs
+```bash id="tfaws2"
+Client → API Gateway → Lambda (FastAPI via Mangum) → DynamoDB
+                           ↑
+                     Code stored in S3
 ```
 
 ---
 
-# ☁️ Deployment
+## 📦 Deployment (S3 + Lambda)
 
-The API is deployed using **Render**.
+1. Package your application:
 
-Render automatically:
-
-* pulls from GitHub
-* installs dependencies
-* runs the FastAPI server
-
-Start command used in deployment:
-
-```
-uvicorn task_api:app --host 0.0.0.0 --port $PORT
+```bash id="tfaws3"
+zip -r function.zip .
 ```
 
+2. Upload to **Amazon S3**
+
+3. Create / update Lambda function using:
+
+* S3 bucket
+* Uploaded ZIP file
+
+4. Configure:
+
+* Runtime: Python
+* Handler: `main.handler`
+
+5. Connect Lambda to **API Gateway**
+
 ---
 
-# 🖥 Frontend
+## 📡 API Endpoints
 
-The **TaskFlow frontend dashboard** is built using **Streamlit**.
-
-Frontend Repository
-https://github.com/iqroguerex-cpu/fastapi-project-2-task-manager-frontend
-
----
-
-# 📄 License
-
-This project is released under the **MIT License**.
+| Method | Endpoint                       | Description    |
+| ------ | ------------------------------ | -------------- |
+| GET    | `/tasks`                       | Get all tasks  |
+| GET    | `/tasks/{task_id}`             | Get task by ID |
+| POST   | `/tasks/create_task`           | Create task    |
+| PUT    | `/tasks/update_task/{task_id}` | Update task    |
+| DELETE | `/tasks/delete_task/{task_id}` | Delete task    |
 
 ---
 
-# 👨‍💻 Author
+## 🎯 Example Request
+
+```json id="tfaws4"
+{
+  "id": 1,
+  "title": "Build TaskFlow",
+  "description": "Deploy serverless backend",
+  "priority": "high",
+  "completed": false
+}
+```
+
+---
+
+## ☁️ AWS Configuration
+
+* **Region:** ap-south-1
+* **DynamoDB Table:** tasks
+* **Partition Key:** id (Number)
+* **API Gateway Stage:** `/default`
+
+---
+
+## 🔧 Key Implementation Details
+
+* Middleware handles `/default` stage prefix
+* CORS enabled for frontend integration
+* Mangum adapts FastAPI for Lambda execution
+* DynamoDB used for persistent storage
+
+---
+
+## 🌐 Frontend Application
+
+👉 https://staging.d3b7v2fqtuw73g.amplifyapp.com/
+
+---
+
+## 🔮 Future Improvements
+
+* 🔐 Authentication (AWS Cognito / JWT)
+* 📊 Task analytics dashboard
+* 📅 Due dates & scheduling
+* 🔍 Search & filtering
+* 📁 File attachments
+
+---
+
+## 👨‍💻 Author
 
 **Chinmay V Chatradamath**
 
-GitHub
-https://github.com/iqroguerex-cpu
-
 ---
 
-⭐ If you found this project useful, consider **starring the repository**.
+## ⭐ Support
+
+If you like this project, give it a ⭐ on GitHub!
