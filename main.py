@@ -1,7 +1,19 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
+import boto3
+from botocore.exceptions import ClientError
 
 app = FastAPI()
+
+# 1. Middleware to handle AWS Stage Name (/default)
+@app.middleware("http")
+async def strip_stage_prefix(request: Request, call_next):
+    path = request.scope.get("path", "")
+    if path.startswith("/default"):
+        request.scope["path"] = path.replace("/default", "", 1)
+    response = await call_next(request)
+    return response
 
 app.add_middleware(
     CORSMiddleware,
@@ -10,44 +22,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-TASKS = [
- {"id":1,"title":"Learn FastAPI","description":"Build APIs","completed":False,"priority":"high"},
- {"id":2,"title":"Study Python","description":"Practice coding","completed":False,"priority":"medium"},
- {"id":3,"title":"Workout","description":"Gym session","completed":True,"priority":"low"}
-]
+# 2. DynamoDB Setup
+# Key assumption: Partition Key is "id" (Number)
+dynamodb = boto3.resource("dynamodb", region_name="ap-south-1")
+table = dynamodb.Table("tasks")
 
 @app.get("/")
 async def root():
-    return {"message": "API is running!"}
+    return {"message": "Task Manager API with DynamoDB is running! 🚀"}
 
 @app.get("/tasks")
 async def show_tasks():
-    return TASKS
+    response = table.scan()
+    return response.get("Items", [])
 
 @app.get("/tasks/{task_id}")
 async def task_by_id(task_id: int):
-    for task in TASKS:
-        if int(task.get("id")) == task_id:
-            return task
-    return {"error": "Task Not Found"}
+    response = table.get_item(Key={"id": task_id})
+    if "Item" in response:
+        return response["Item"]
+    raise HTTPException(status_code=404, detail="Task Not Found")
 
 @app.post("/tasks/create_task")
-async def create_tasks(create_task = Body()):
-    TASKS.append(create_task)
-    return "Task Created Successfully.."
+async def create_tasks(task = Body()):
+    # Ensure ID is an integer for DynamoDB Number type
+    if "id" in task:
+        task["id"] = int(task["id"])
+    table.put_item(Item=task)
+    return {"message": "Task Created Successfully.."}
 
 @app.put("/tasks/update_task/{task_id}")
 async def update_task(task_id: int, updated_task = Body()):
-    for i in range(len(TASKS)):
-        if TASKS[i].get("id") == task_id:
-            TASKS[i] = updated_task
-            return "Task Updated Successfully"
-    return "Could not Update Task"
+    # Ensure the ID in the body matches the URL and is a Number
+    updated_task["id"] = task_id
+    table.put_item(Item=updated_task)
+    return {"message": "Task Updated Successfully"}
 
 @app.delete("/tasks/delete_task/{task_id}")
 async def delete_task(task_id: int):
-    for i in range(len(TASKS)):
-        if TASKS[i].get("id") == task_id:
-            TASKS.pop(i)
-            return "Task Successfully Deleted"
-    return "Task Not Deleted"
+    try:
+        table.delete_item(Key={"id": task_id})
+        return {"message": "Task Successfully Deleted"}
+    except ClientError as e:
+        return {"error": e.response['Error']['Message']}
+
+handler = Mangum(app)
